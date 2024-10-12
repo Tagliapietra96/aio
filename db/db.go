@@ -154,54 +154,6 @@ func hasRemoteCommits() bool {
 	return hasremote
 }
 
-// hasLocalCommits function checks if there are local commits.
-// it is used to check if there are local commits before making changes to the database.
-func hasLocalCommits() bool {
-	if !haslocalCheck {
-		_, err := cmdExec("git", "rev-parse", "--verify", "HEAD")
-		haslocal = err == nil // Return true if there are local commits
-		haslocalCheck = true
-	}
-	return haslocal
-}
-
-// hasChanges function checks if there are changes in the database file.
-func hasChanges() bool {
-	if !haschangesCheck {
-		dbfile := getPath("data.db")
-		output, err := cmdExec("git", "status", "--porcelain", dbfile)
-		if err != nil {
-			log.Fatal("Failed to check changes", "output", output, "error", err)
-		}
-
-		haschanges = strings.TrimSpace(output) != ""
-		haschangesCheck = true
-	}
-	return haschanges
-}
-
-// hasMain function checks if the main branch exists.
-// it is used to check if the main branch exists before making changes to the database.
-func hasMain() bool {
-	if !hasmainCheck {
-		_, err := cmdExec("git", "show-ref", "--verify", "refs/heads/main")
-		hasmain = err == nil
-		hasmainCheck = true
-	}
-	return hasmain
-}
-
-// gitFetch function fetches the remote repository.
-// it is used to fetch the remote repository before making changes to the database.
-func gitFetch() {
-	if remoteExists() && hasRemoteCommits() && !isAligned {
-		output, err := cmdExec("git", "fetch")
-		if err != nil {
-			log.Fatal("Failed to fetch remote repository", "output", output, "error", err)
-		}
-	}
-}
-
 // gitPull function pulls the remote repository.
 // it is used to pull the remote repository before making changes to the database.
 func gitPull() {
@@ -218,7 +170,13 @@ func gitPull() {
 // gitMain function checks out the main branch.
 // it is used to checkout the main branch before making changes to the database.
 func gitMain() {
-	if !hasMain() {
+	if !hasmainCheck {
+		_, err := cmdExec("git", "show-ref", "--verify", "refs/heads/main")
+		hasmain = err == nil
+		hasmainCheck = true
+	}
+
+	if !hasmain {
 		output, err := cmdExec("git", "checkout", "-b", "main")
 		if err != nil {
 			log.Fatal("Failed to create main branch", "output", output, "error", err)
@@ -236,44 +194,111 @@ func gitMain() {
 // it is used to commit the database file to the local repository.
 // it also renames the branch to main and pushes the changes to the remote repository if it exists.
 func initialCommit() {
-	dbfile := getPath("data.db")
-	var output string
-	var err error
+	if !haschangesCheck {
+		dbfile := getPath("data.db")
+		output, err := cmdExec("git", "status", "--porcelain", dbfile)
+		if err != nil {
+			log.Fatal("Failed to check changes", "output", output, "error", err)
+		}
 
-	if !hasRemoteCommits() && !hasLocalCommits() {
-		output, err = cmdExec("git", "add", dbfile)
+		haschanges = strings.TrimSpace(output) != ""
+		haschangesCheck = true
+	}
+
+	if haschanges {
+
+		dbfile := getPath("data.db")
+		var output string
+		var err error
+
+		if !haslocalCheck {
+			_, err := cmdExec("git", "rev-parse", "--verify", "HEAD")
+			haslocal = err == nil // Return true if there are local commits
+			haslocalCheck = true
+		}
+
+		if !hasRemoteCommits() && !haslocal {
+			output, err = cmdExec("git", "add", dbfile)
+			if err != nil {
+				log.Fatal("Failed to add database file", "output", output, "error", err)
+			}
+
+			// do the initial commit
+			output, err = cmdExec("git", "commit", "-m", "initial commit")
+			if err != nil {
+				log.Fatal("Failed to commit changes", "output", output, "error", err)
+			}
+
+			output, err = cmdExec("git", "branch", "-M", "main")
+			if err != nil {
+				log.Fatal("Failed to rename branch", "output", output, "error", err)
+			}
+
+			haslocal = true
+		}
+	}
+}
+
+// gitFlow function is a wrapper function that executes a series of git commands.
+// it is used to execute a series of git commands in a transaction to ensure the integrity of the data.
+// if an error occurs, it rolls back the changes.
+func gitFlow(action func() error) error {
+	wu.Add(1)
+	// pull the remote repository (if it exists) before making changes
+	gitPull()
+
+	// create a new branch
+	branch := time.Now().Format("2006-01-02-15-04-05")
+	output, err := cmdExec("git", "checkout", "-b", branch)
+	if err != nil {
+		log.Fatal("Failed to create branch", "output", output, "error", err)
+	}
+
+	// execute the actions on the database, if an error occurs, delete the branch and return the error
+	err = action()
+	if err != nil {
+		gitMain()
+		output, err = cmdExec("git", "branch", "-D", branch)
+		if err != nil {
+			log.Fatal("Failed to delete branch", "output", output, "error", err)
+		}
+		return err
+	}
+
+	// commit the changes to the database
+	go func() {
+		defer wu.Done()
+		output, err := cmdExec("git", "add", getPath("data.db"))
 		if err != nil {
 			log.Fatal("Failed to add database file", "output", output, "error", err)
 		}
 
-		// do the initial commit
-		output, err = cmdExec("git", "commit", "-m", "initial commit")
+		output, err = cmdExec("git", "commit", "-m", fmt.Sprintf("Version %s", branch))
 		if err != nil {
 			log.Fatal("Failed to commit changes", "output", output, "error", err)
 		}
 
-		output, err = cmdExec("git", "branch", "-M", "main")
+		gitMain()
+		output, err = cmdExec("git", "merge", branch, "--no-ff")
 		if err != nil {
-			log.Fatal("Failed to rename branch", "output", output, "error", err)
+			log.Fatal("Failed to merge branches", "output", output, "error", err)
 		}
-
-		haslocal = true
-	}
+	}()
+	return nil
 }
 
-// gitNewBranch function creates a new branch.
-// it is used to create a new branch before making changes to the database.
-func gitNewBranch() string {
-	branchName := time.Now().Format("2006-01-02-15-04-05")
-	output, err := cmdExec("git", "checkout", "-b", branchName)
+// save function saves the changes made to the database.
+// it is used to save the changes made to the database and push them to the remote repository if it exists.
+// it also creates a new branch for the changes.
+func save() {
+	// add the new push schedule log
+	err := gitFlow(func() error {
+		return do("push_schedules_create")
+	})
 	if err != nil {
-		log.Fatal("Failed to create branch", "output", output, "error", err)
+		log.Fatal("Failed to save new push schedule log", "error", err)
 	}
-	return branchName
-}
 
-// push function pushes the changes to the remote repository.
-func push() {
 	wu.Wait()
 	// push the changes to the remote repository if it exists
 	if remoteExists() {
@@ -284,59 +309,6 @@ func push() {
 		}
 		hasremote = true
 	}
-}
-
-// gitCommit function commits the changes made to the database.
-// it is used to commit the changes made to the database to the local repository.
-// it also merges the branch with the main branch and pushes the changes to the remote repository if it exists.
-func gitCommit(branchName string) {
-	defer wu.Done()
-	output, err := cmdExec("git", "add", getPath("data.db"))
-	if err != nil {
-		log.Fatal("Failed to add database file", "output", output, "error", err)
-	}
-
-	output, err = cmdExec("git", "commit", "-m", fmt.Sprintf("Version %s", branchName))
-	if err != nil {
-		log.Fatal("Failed to commit changes", "output", output, "error", err)
-	}
-
-	gitMain()
-	output, err = cmdExec("git", "merge", branchName, "--no-ff")
-	if err != nil {
-		log.Fatal("Failed to merge branches", "output", output, "error", err)
-	}
-}
-
-// gitRollback function rolls back the changes made to the database.
-// it is used to roll back the changes made to the database if an error occurs.
-func gitRollback(branchName string) {
-	output, err := cmdExec("git", "checkout", "main")
-	if err != nil {
-		log.Fatal("Failed to checkout main branch", "output", output, "error", err)
-	}
-
-	output, err = cmdExec("git", "branch", "-D", branchName)
-	if err != nil {
-		log.Fatal("Failed to delete branch", "output", output, "error", err)
-	}
-}
-
-// gitFlow function is a wrapper function that executes a series of git commands.
-// it is used to execute a series of git commands in a transaction to ensure the integrity of the data.
-// if an error occurs, it rolls back the changes.
-func gitFlow(action func() error) error {
-	wu.Add(1)
-	gitPull()
-	branch := gitNewBranch()
-	err := action()
-	if err != nil {
-		gitRollback(branch)
-		return err
-	}
-
-	go gitCommit(branch)
-	return nil
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -441,7 +413,12 @@ func Init() {
 		linkRepo()
 		if remoteExists() {
 			log.Info("Fetching remote repository...")
-			gitFetch()
+			if remoteExists() && hasRemoteCommits() && !isAligned {
+				output, err := cmdExec("git", "fetch")
+				if err != nil {
+					log.Fatal("Failed to fetch remote repository", "output", output, "error", err)
+				}
+			}
 			gitPull()
 		}
 
@@ -485,24 +462,9 @@ func Init() {
 		log.Fatal("Failed to create tables", "error", err)
 	}
 
-	if hasChanges() {
-		initialCommit()
-	}
+	initialCommit()
 
 	log.Info("Database initialized successfully!")
-}
-
-// save function saves the changes made to the database.
-// it is used to save the changes made to the database and push them to the remote repository if it exists.
-// it also creates a new branch for the changes.
-func save() {
-	err := gitFlow(func() error {
-		return do("push_schedules_create")
-	})
-	if err != nil {
-		log.Fatal("Failed to save new push schedule log", "error", err)
-	}
-	push()
 }
 
 // AutoSave function saves the changes made to the database automatically.
