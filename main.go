@@ -3,7 +3,7 @@
 
 // File Name: main.go
 // Created by: Matteo Tagliapietra 2024-09-01
-// Last Update: 2024-10-05
+// Last Update: 2024-10-14
 
 // This is the main entry point for the application.
 // It initializes the database and checks if the user exists.
@@ -18,8 +18,10 @@
 package main
 
 // imports the necessary packages
+// cmd package is used to execute commands
 // db package is used to interact with the database
 import (
+	"aio/cmd"
 	"aio/db"
 )
 
@@ -31,8 +33,8 @@ func main() {
 	// initializes the database (and the user if it does not exist)
 	db.Init()
 
-	// custom code here
-	// ...
+	// execute commands
+	cmd.Execute()
 
 	// push the db file to the git repository if it has not been pushed today yet
 	db.AutoSave()
