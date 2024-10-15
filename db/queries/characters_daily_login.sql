@@ -1,6 +1,4 @@
 -- File: characters_daily_login.sql
--- Created by: Matteo Tagliapietra 2024-10-15
--- Last modified: 2024-10-15
 -- Purpose: Increments character stats and create a new daily login in the database.
 
 -- Increment character stats

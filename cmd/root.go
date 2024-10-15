@@ -1,24 +1,6 @@
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-
-// File Name: root.go
-// Created by: Matteo Tagliapietra 2024-10-14
-// Last Update: 2024-10-15
-
-// This file contains the root command for the application.
-// This is the main entry point for the cobra commands.
-// It initializes the root command and executes the commands.
-
-// ////////////////////////////////////////////////////////////////////
-// ////////////////////////////////////////////////////////////////////
-
 // cmd package is used to execute commands
 package cmd
 
-// imports the necessary packages
-// db package is used to interact with the database
-// log package is used to log messages to the console
-// cobra package is used to create CLI applications
 import (
 	"aio/db"
 

@@ -1,28 +1,6 @@
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-
-// File Name: inputs.go
-// Created by: Matteo Tagliapietra 2024-10-08
-// Last Update: 2024-10-15
-
-// This file contains the input structs and functions to manipulate it.
-// Every input ha a runnable function that initializes the input and returns the value.
-
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-
 // helpers package contains the helpers used in the application.
 package helpers
 
-// imports the necessary packages
-// fmt package is used to format strings
-// math package is used to perform mathematical operations
-// os package is used to interact with the operating system
-// strings package is used to manipulate strings
-// bubbles package is used to add components to the models
-// bubbletea package is used to create terminal applications
-// lipgloss package is used to style the terminal output
-// log package is used to log messages to the console
 import (
 	"fmt"
 	"math"
@@ -35,9 +13,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 )
-
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
 
 //
 // Input functions
