@@ -4,7 +4,7 @@
 
 -- File Name: tables.sql
 -- Created by: Matteo Tagliapietra 2024-09-01
--- Last modified: 2024-10-12
+-- Last modified: 2024-10-15
 
 -- Tables creation script
 -- In this file we define the tables and triggers for the database
@@ -23,8 +23,8 @@
 -- the notifications are used to log every time the app push the db to the remote
 -- the created_at field is unique for prevent duplicate push schedules, or conflicts in the transactions
 CREATE TABLE IF NOT EXISTS push_schedules (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')) UNIQUE
+    id INTEGER PRIMARY KEY AUTOINCREMENT, -- unique identifier for the push schedule
+    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')) UNIQUE -- record creation timestamp
 );
 
 -- push_schedules table indexes
@@ -36,172 +36,76 @@ CREATE INDEX IF NOT EXISTS push_schedules_created_at_index ON push_schedules (cr
 --------------------------------------------------------------------------------------
 
 --
--- users table
+-- characters table
 --
 
--- from now only one user is allowed, the user with id = 1. This user is the main user and is used to store the user stats
--- if there is no user with id = 1, the app at the first run will insert the user with id = 1 asking the user to fill the user data
--- this entity is the main entity of the app, and all the other entities are related to this entity (DIRECTLY OR INDIRECTLY)
--- the created_at and nickname fields are unique, in vision of future implementation of multiple users
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')) UNIQUE,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    firstname TEXT NOT NULL, -- user first name
-    lastname TEXT NOT NULL, -- user last name
-    nickname TEXT NOT NULL UNIQUE, -- user nickname, must be unique
-    max_hp INTEGER NOT NULL DEFAULT 100, -- user max health points, they are increased by 10 after level up
-    hp INTEGER NOT NULL DEFAULT 100, -- user health points they are increased by 10 after level up and descreased by bad events, if hp <= 0 user is dead and skills and user xp are reset
-    max_pp INTEGER NOT NULL DEFAULT 50, -- user max productivity points, they are increased by 5 after level up
-    pp INTEGER NOT NULL DEFAULT 50, -- user productivity points they are increased by 5 after level up and descreased by missions and rituals, if pp <= 0 user is burned out and skills and not able to do missions and rituals
-    xp INTEGER NOT NULL DEFAULT 0, -- user experience points they are increased by missions, rituals and goals, if xp >= next_level_xp user level up
-    karma INTEGER NOT NULL DEFAULT 0, -- user karma, it is increased by good events and decreased by bad events
-    next_level_xp INTEGER NOT NULL DEFAULT 50, -- user next level xp, it is increased by 50 after level up
-    level INTEGER NOT NULL DEFAULT 1, -- user level, it is increased by 1 after level up
-    budget REAL NOT NULL DEFAULT 0.0, -- user monthly budget, it is used to check if user can afford expenses
-    balance REAL NOT NULL DEFAULT 0.0, -- user balance, it is updated after account insert, update and delete, is the sum of all user accounts balance
-    coins INTEGER NOT NULL DEFAULT 0 -- user coins, they are increased by goals and can be used to buy hp, or used to get the wishlist items
+-- the characters table is used to store the user character information
+-- the character represents the user in the application, making the experience more engaging
+CREATE TABLE IF NOT EXISTS characters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, -- unique identifier for the character
+    firstname TEXT NOT NULL, -- character's first name
+    lastname TEXT NOT NULL, -- character's last name
+    nickname TEXT NOT NULL UNIQUE, -- character's nickname, must be unique
+    birthday TEXT NOT NULL, -- character's birthday, used for birthday greetings
+    budget REAL NOT NULL DEFAULT 0.0, -- character's budget for financial management
+    balance REAL NOT NULL DEFAULT 0.0, -- character's balance for financial management
+    coins INTEGER NOT NULL DEFAULT 0, -- character's coins, used for rewards
+    xp INTEGER NOT NULL DEFAULT 0, -- character's experience points
+    next_level_xp INTEGER NOT NULL DEFAULT 50, -- experience points needed for next level
+    level INTEGER NOT NULL DEFAULT 1, -- character's level
+    pp INTEGER NOT NULL DEFAULT 50, -- character's current power points
+    max_pp INTEGER NOT NULL DEFAULT 50, -- character's maximum power points
+    hp INTEGER NOT NULL DEFAULT 100, -- character's current health points
+    max_hp INTEGER NOT NULL DEFAULT 100, -- character's maximum health points
+    karma INTEGER NOT NULL DEFAULT 0, -- character's karma, an indicator of performance
+    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')), -- record creation timestamp
+    updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')) -- record update timestamp
 );
 
---
--- users table indexes
---
-
-CREATE INDEX IF NOT EXISTS users_id_index ON users (id);
-
---
--- users table triggers
---
-
--- update user updateded_at after user update
-CREATE TRIGGER IF NOT EXISTS update_user_updated_at_after_user_update
-AFTER UPDATE ON users
-FOR EACH ROW
-BEGIN
-    UPDATE users
-    SET updated_at = datetime('now', 'localtime')
-    WHERE id = NEW.id;
-END;
+-- characters table indexes
+CREATE INDEX IF NOT EXISTS characters_id_index ON characters (id);
+CREATE INDEX IF NOT EXISTS characters_firstname_index ON characters (firstname);
+CREATE INDEX IF NOT EXISTS characters_lastname_index ON characters (lastname);
+CREATE INDEX IF NOT EXISTS characters_nickname_index ON characters (nickname);
+CREATE INDEX IF NOT EXISTS characters_birthday_index ON characters (birthday);
+CREATE INDEX IF NOT EXISTS characters_budget_index ON characters (budget);
+CREATE INDEX IF NOT EXISTS characters_balance_index ON characters (balance);
+CREATE INDEX IF NOT EXISTS characters_coins_index ON characters (coins);
+CREATE INDEX IF NOT EXISTS characters_xp_index ON characters (xp);
+CREATE INDEX IF NOT EXISTS characters_next_level_xp_index ON characters (next_level_xp);
+CREATE INDEX IF NOT EXISTS characters_level_index ON characters (level);
+CREATE INDEX IF NOT EXISTS characters_pp_index ON characters (pp);
+CREATE INDEX IF NOT EXISTS characters_max_pp_index ON characters (max_pp);
+CREATE INDEX IF NOT EXISTS characters_hp_index ON characters (hp);
+CREATE INDEX IF NOT EXISTS characters_max_hp_index ON characters (max_hp);
+CREATE INDEX IF NOT EXISTS characters_karma_index ON characters (karma);
+CREATE INDEX IF NOT EXISTS characters_created_at_index ON characters (created_at);
+CREATE INDEX IF NOT EXISTS characters_updated_at_index ON characters (updated_at);
 
 --------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------
 
 --
--- dayly_logins table
+-- daily_logins table
 --
 
--- the dayly_logins table is used to store the user dayly logins
--- every day the user logs in the app, a dayly login is inserted in the dayly_logins table
+-- the daily_logins table is used to store the user dayly logins
+-- every day the user logs in the app, a dayly login is inserted in the daily_logins table
 -- every dayly login insert if the user restores the pp to the max values, and if the user has less than 75% of the max hp, the user restores the 25% of the max hp
 -- the created_at field is unique for prevent duplicate dayly logins, or conflicts in the transactions
-CREATE TABLE IF NOT EXISTS dayly_logins (
+CREATE TABLE IF NOT EXISTS daily_logins (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')) UNIQUE,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    user_id INTEGER NOT NULL DEFAULT 1, -- user id, the user that owns the dayly login
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')) UNIQUE
 );
 
---
--- dayly_logins table indexes
---
-
-CREATE INDEX IF NOT EXISTS dayly_logins_id_index ON dayly_logins (id);
-CREATE INDEX IF NOT EXISTS dayly_logins_created_at_index ON dayly_logins (created_at);
-CREATE INDEX IF NOT EXISTS dayly_logins_user_id_index ON dayly_logins (user_id);
-
---
--- dayly_logins table triggers
---
-
--- update dayly_login updateded_at after dayly_login update
-CREATE TRIGGER IF NOT EXISTS update_dayly_login_updated_at_after_dayly_login_update
-AFTER UPDATE ON dayly_logins
-FOR EACH ROW
-BEGIN
-    UPDATE dayly_logins
-    SET updated_at = datetime('now', 'localtime')
-    WHERE id = NEW.id;
-END;
-
--- restore user hp and pp after dayly_login insert
-CREATE TRIGGER IF NOT EXISTS restore_user_hp_and_pp_after_dayly_login_insert
-AFTER INSERT ON dayly_logins
-FOR EACH ROW
-BEGIN
-    -- restore user hp and pp
-    UPDATE users
-    SET 
-        hp = CASE
-            WHEN hp < 0.75 * max_hp THEN hp + (0.25 * max_hp)
-            ELSE max_hp
-        END,
-        pp = max_pp
-    WHERE id = NEW.user_id;
-END;
+-- daily_logins table indexes
+CREATE INDEX IF NOT EXISTS daily_logins_id_index ON daily_logins (id);
+CREATE INDEX IF NOT EXISTS daily_logins_created_at_index ON daily_logins (created_at);
 
 --------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------
-
---
--- death_logs table
---
-
--- the death_logs table is used to store the user death logs
--- every time the user finishes the hp, a death log is inserted in the death_logs table
--- when a death log is inserted, the user xp, level, hp, pp and coins are reset and the user get -10 karma
--- the created_at field is unique for prevent duplicate death logs, or conflicts in the transactions
-CREATE TABLE IF NOT EXISTS death_logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')) UNIQUE,
-    updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    user_id INTEGER NOT NULL DEFAULT 1, -- user id, the user that owns the death log
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-
---
--- death_logs table indexes
---
-
-CREATE INDEX IF NOT EXISTS death_logs_id_index ON death_logs (id);
-CREATE INDEX IF NOT EXISTS death_logs_created_at_index ON death_logs (created_at);
-CREATE INDEX IF NOT EXISTS death_logs_user_id_index ON death_logs (user_id);
-
---
--- death_logs table triggers
---
-
--- update death_log updateded_at after death_log update
-CREATE TRIGGER IF NOT EXISTS update_death_log_updated_at_after_death_log_update
-AFTER UPDATE ON death_logs
-FOR EACH ROW
-BEGIN
-    UPDATE death_logs
-    SET updated_at = datetime('now', 'localtime')
-    WHERE id = NEW.id;
-END;
-
--- reset user xp, level, hp, pp, skills and coins after death_log insert
-CREATE TRIGGER IF NOT EXISTS reset_user_xp_level_hp_pp_skills_and_coins_after_death_log_insert
-AFTER INSERT ON death_logs
-FOR EACH ROW
-BEGIN
-    -- reset user xp, level, hp, pp, skills and coins
-    UPDATE users
-    SET 
-        xp = 0,
-        next_level_xp = 50,
-        level = 1,
-        max_hp = 100,
-        hp = 100,
-        max_pp = 50,
-        pp = 50,
-        karma = karma - 10,
-        coins = 0
-    WHERE id = NEW.user_id;
-END;
 
 --
 -- logs table
