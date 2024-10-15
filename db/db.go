@@ -3,7 +3,7 @@
 
 // File Name: db.go
 // Created by: Matteo Tagliapietra 2024-09-01
-// Last Update: 2024-10-05
+// Last Update: 2024-10-15
 
 // This is the main file of the db package.
 // It contains the Init function that initializes the database.
@@ -30,6 +30,7 @@ package db
 // go-sqlite3 package is the driver used to interact with SQLite databases
 import (
 	"aio/helpers"
+	"aio/style"
 	"database/sql"
 	"embed"
 	"fmt"
@@ -507,6 +508,7 @@ func Init() {
 			log.Fatal("Failed to initialize git", "output", output, "error", err)
 		}
 
+		// if git is not initialized, link the repository
 		linkRepo()
 		if remoteExists() {
 			log.Info("Fetching remote repository...")
@@ -519,6 +521,7 @@ func Init() {
 			gitPull()
 		}
 
+		// if the .gitignore file does not exist, create a new one
 		gitIgnorePath := getPath(".gitignore")
 		if _, err := os.Stat(gitIgnorePath); os.IsNotExist(err) {
 			log.Warn(".gitignore file not found, creating a new one", "file", gitIgnorePath)
@@ -537,6 +540,7 @@ func Init() {
 		log.Info("Git initialized successfully!\n")
 	}
 
+	// if the database file does not exist, create a new one
 	dbfile := getPath("data.db")
 	_, err := os.Stat(dbfile)
 	if os.IsNotExist(err) {
@@ -552,9 +556,81 @@ func Init() {
 		log.Info("Database file created", "file", dbfile)
 	}
 
+	// create the tables, indexes, and triggers
 	err = do("tables")
 	if err != nil {
 		log.Fatal("Failed to create tables", "error", err)
+	}
+
+	// check if there are characters in the database
+	var exists bool
+	row, err := get("characters_exists")
+	if err != nil {
+		log.Fatal("Failed to check if characters exist", "error", err)
+	}
+
+	err = row.Scan(&exists)
+	if err != nil {
+		log.Fatal("Failed to check if characters exist", "error", err)
+	}
+
+	// if characters do not exist, create the initial character
+	if !exists {
+		style.PrintTitle("\nWelcome to AIO - Your Life, Gamified!")
+		style.Print(`
+Turn your tasks, goals, and habits into an adventure.
+Track progress, manage your finances, boost productivity, and level up in all aspects of life.
+Ready to make self-improvement fun? Your journey starts now!
+`)
+		style.Print("Welcome, traveler! Before we begin your adventure, we need to know your name.")
+		style.Print("What is your first name, brave soul?")
+		fn := helpers.RunInput("Jhon")
+
+		style.Print("A strong name indeed! Now, please tell us your family name, the one that will echo through the halls of history.")
+		style.Print("What is your last name, worthy adventurer?")
+		ln := helpers.RunInput("Smith")
+
+		style.Print("Every hero has a title that the bards will sing of! Choose a nickname, one that will strike fear into your foes or inspire your allies.")
+		style.Print("What shall your unique nickname be?")
+		nn := helpers.RunInput("The Reaper")
+
+		style.Print("Even legends have a beginning. We need to know when your story began.")
+		style.Print("Please provide your date of birth in the form of 02 Jan 06 (day month year).")
+		style.Print("When were you born, chosen one?")
+		dob := helpers.RunInputWithValidation("02 Jan 06", helpers.TimeValidate)
+
+		style.Print("Every great adventurer must wisely manage their resources, not just in battle, but also in life.")
+		style.Print("Set your monthly budget—this will guide how you manage your gold throughout your journey!")
+		style.Print(("How much gold will you allocate each month for your expenses? (Enter a numeric value)"))
+		b := helpers.RunInputWithValidation("1500.00", helpers.NumberValidate)
+
+		err := gitFlow(func() error {
+			return do("characters_create", fn, ln, nn, helpers.TimeDBReformat(dob), helpers.NumberParse(b))
+		})
+		if err != nil {
+			log.Fatal("Failed to create character", "error", err)
+		}
+
+		style.Print("🎉 Your character has been created! 🎉")
+	}
+
+	// check if there are daily logins in the database for today
+	row, err = get("daily_logins_today_exists")
+	if err != nil {
+		log.Fatal("Failed to check if daily logins exist", "error", err)
+	}
+
+	err = row.Scan(&exists)
+	if err != nil {
+		log.Fatal("Failed to check if daily logins exist", "error", err)
+	}
+
+	// if daily logins do not exist, create the daily login and update the character stats
+	if !exists {
+		err = gitFlow(func() error { return do("characters_daily_login") })
+		if err != nil {
+			log.Fatal("Failed to create daily login", "error", err)
+		}
 	}
 
 	initialCommit()
