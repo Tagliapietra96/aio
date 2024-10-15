@@ -3,7 +3,7 @@
 
 // File Name: time.go
 // Created by: Matteo Tagliapietra 2024-09-01
-// Last Update: 2024-10-05
+// Last Update: 2024-10-15
 
 // This file contains helper functions to parse and format time strings.
 // It is used to parse time strings and return time.Time objects.
@@ -93,6 +93,13 @@ func TimeDBParse(s string) time.Time {
 // the function get a time.Time object and return a string.
 func TimeDBFormat(t time.Time) string {
 	return t.Format(dbtimeformat)
+}
+
+// TimeDBReformat is a helper function to reformat a time string from a database.
+// the function get a string and return a string.
+func TimeDBReformat(s string) string {
+	t := TimeParse(s)
+	return TimeDBFormat(t)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -417,3 +424,21 @@ func TimeAfterWeek(t1, t2 time.Time) bool {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+
+//
+// validation functions
+//
+
+// TimeValidate checks if a string can be parsed as a time.Time object.
+func TimeValidate(s string) error {
+	now := time.Now()                                // get current datetime
+	tz, _ := now.Zone()                              // get timezone
+	tf := strings.Replace(timeformat, "Mon ", "", 1) // remove also the day from the timeformat
+	s += " 00:00"                                    // add time
+	s += " " + tz
+	_, err := time.Parse(tf, s)
+	if err != nil {
+		return errors.New("Invalid time format, use the following format: 02 Jan 06 (day month year)")
+	}
+	return nil
+}
