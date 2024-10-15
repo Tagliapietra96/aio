@@ -3,7 +3,7 @@
 
 // File Name: inputs.go
 // Created by: Matteo Tagliapietra 2024-10-08
-// Last Update: 2024-10-14
+// Last Update: 2024-10-15
 
 // This file contains the input structs and functions to manipulate it.
 // Every input ha a runnable function that initializes the input and returns the value.
@@ -102,10 +102,10 @@ func (i *input) View() string {
 	)
 }
 
-// RunInoutWithValidation function initializes the input field and returns the value.
+// RunInputWithValidation function initializes the input field and returns the value.
 // It takes a string as input placeholder and a validation function and returns a string.
 // the validation function takes a string as input and returns an error.
-func RunInoutWithValidation(ph string, validation func(string) error) string {
+func RunInputWithValidation(ph string, validation func(string) error) string {
 	ti := textinput.New()
 	ti.Placeholder = ph
 	ti.Focus()
@@ -133,7 +133,7 @@ func RunInput(ph string) string {
 		}
 		return nil
 	}
-	return RunInoutWithValidation(ph, validation)
+	return RunInputWithValidation(ph, validation)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

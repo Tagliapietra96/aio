@@ -3,7 +3,7 @@
 
 // File Name: root.go
 // Created by: Matteo Tagliapietra 2024-10-14
-// Last Update: 2024-10-14
+// Last Update: 2024-10-15
 
 // This file contains the root command for the application.
 // This is the main entry point for the cobra commands.
@@ -31,9 +31,9 @@ var rootCmd = &cobra.Command{
 	Use:   "aio",
 	Short: "A all in one application",
 	Long: `
-aio is a CLI application that allows you to manage multiple aspects of your life.
-It is a personal assistant that helps you to keep track of your tasks, notes, finances, and more.
-The application is designed to be a RPG like game where you can level up by completing tasks and challenges.
+aio (All In One) is a multi-purpose CLI app that manages tasks, notes, finances, 
+health, and productivity, transforming life into a video game. 
+Track progress, achieve goals, and level up in all aspects of your journey—making productivity fun and rewarding.
 It is a fun way to keep track of your life and improve yourself.
 
 For more information, visit the project page at https://github.com/Tagliapietra96/aio`,
