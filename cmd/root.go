@@ -37,6 +37,10 @@ The application is designed to be a RPG like game where you can level up by comp
 It is a fun way to keep track of your life and improve yourself.
 
 For more information, visit the project page at https://github.com/Tagliapietra96/aio`,
+	// init the database and user if they do not exist
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		db.Init()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		revert, err := cmd.Flags().GetBool("revert")
 		if err != nil {
@@ -46,6 +50,10 @@ For more information, visit the project page at https://github.com/Tagliapietra9
 		if revert {
 			db.Revert()
 		}
+	},
+	// push the changes on repository
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		db.AutoSave()
 	},
 }
 

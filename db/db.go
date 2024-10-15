@@ -550,18 +550,14 @@ func Init() {
 
 		file.Close()
 		log.Info("Database file created", "file", dbfile)
-
 	}
 
-	log.Info("Initializing database...")
 	err = do("tables")
 	if err != nil {
 		log.Fatal("Failed to create tables", "error", err)
 	}
 
 	initialCommit()
-
-	log.Info("Database initialized successfully!")
 }
 
 // AutoSave function saves the changes made to the database automatically.
