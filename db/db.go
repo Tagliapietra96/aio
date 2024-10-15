@@ -612,6 +612,9 @@ Ready to make self-improvement fun? Your journey starts now!
 		}
 
 		style.Print("🎉 Your character has been created! 🎉")
+		style.Print("Welcome, " + fn + " " + ln + ", also known as " + nn + "!")
+		style.Print("Now, go forth and conquer the challenges ahead!")
+		style.Print("\nTo view an help text use the command 'aio --help', or 'aio -h'.\n")
 	}
 
 	// check if there are daily logins in the database for today
