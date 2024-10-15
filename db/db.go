@@ -18,9 +18,14 @@ package db
 // imports the necessary packages
 // sql package is used to interact with the database
 // embed package is used to embed files in the binary
+// fmt package is used to format strings
+// io package is used to perform I/O operations
 // os package is used to read and create files
 // exec package is used to execute commands
 // filepath package is used to manipulate file paths
+// strings package is used to manipulate strings
+// sync package is used to manage concurrent operations
+// time package is used to manipulate time
 // log package is used to log messages to the console
 // go-sqlite3 package is the driver used to interact with SQLite databases
 import (
@@ -28,9 +33,11 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -66,6 +73,9 @@ func loadQuery(filename string) string {
 // Path functions
 //
 
+// getExecDir function returns the directory of the executable file.
+// it is used to run all the commands in the directory of the executable file.
+// this maintaning the integrity of the data.
 func getExecDir() string {
 	execPath, err := os.Executable()
 	if err != nil {
@@ -248,7 +258,7 @@ func gitFlow(action func() error) error {
 	gitPull()
 
 	// create a new branch
-	branch := time.Now().Format("2006-01-02-15-04-05")
+	branch := time.Now().Format("20060102150405")
 	output, err := cmdExec("git", "checkout", "-b", branch)
 	if err != nil {
 		log.Fatal("Failed to create branch", "output", output, "error", err)
@@ -273,7 +283,7 @@ func gitFlow(action func() error) error {
 			log.Fatal("Failed to add database file", "output", output, "error", err)
 		}
 
-		output, err = cmdExec("git", "commit", "-m", fmt.Sprintf("Version %s", branch))
+		output, err = cmdExec("git", "commit", "-m", "changes-"+branch)
 		if err != nil {
 			log.Fatal("Failed to commit changes", "output", output, "error", err)
 		}
@@ -287,23 +297,87 @@ func gitFlow(action func() error) error {
 	return nil
 }
 
+// revertDB function reverts the database to a previous version.
+// it is used to revert the database to a previous version.
+// it gets the commit hash of the version to revert to and reverts the database to that version.
+// it also commits the changes.
+func revertDB() {
+	// get the commit hash
+	output, err := cmdExec("git", "log", "--pretty=format:%h %ad %s", "--date=short", "data.db")
+	if err != nil {
+		log.Fatal("Failed to get log", "output", output, "error", err)
+	}
+	history := strings.Split(output, "\n")
+	fmt.Println("Select the version to revert to:\n")
+	choice := helpers.RunSelect(history)
+	fmt.Println("")
+	commitHash := strings.Split(choice, " ")[0]
+	version := strings.Split(choice, " ")[2]
+
+	// do a back up of the database
+	backup()
+
+	// revert the database
+	output, err = cmdExec("git", "checkout", commitHash, "--", "data.db")
+	if err != nil {
+		log.Fatal("Failed to revert database", "output", output, "error", err)
+	}
+
+	// commit the changes
+	output, err = cmdExec("git", "add", "data.db")
+	if err != nil {
+		log.Fatal("Failed to add database file", "output", output, "error", err)
+	}
+
+	output, err = cmdExec("git", "commit", "-m", "revert-database-to-"+version)
+	if err != nil {
+		log.Fatal("Failed to commit changes", "output", output, "error", err)
+	}
+
+	log.Info("Database reverted to version " + version)
+}
+
 // save function saves the changes made to the database.
 // it is used to save the changes made to the database and push them to the remote repository if it exists.
 // it also creates a new branch for the changes.
 func save() {
-	// add the new push schedule log
-	err := gitFlow(func() error {
-		return do("push_schedules_create")
-	})
-	if err != nil {
-		log.Fatal("Failed to save new push schedule log", "error", err)
-	}
-
-	wu.Wait()
-	// push the changes to the remote repository if it exists
 	if remoteExists() {
+		// add the new push schedule log
+		err := gitFlow(func() error {
+			return do("push_schedules_create")
+		})
+		if err != nil {
+			log.Fatal("Failed to save new push schedule log", "error", err)
+		}
+
+		wu.Wait()
+		// check if the remote branch exists
+		output, err := cmdExec("git", "ls-remote", "--heads", "origin", "main")
+		if err != nil {
+			log.Fatal("Failed to check remote branch existence", "output", output, "error", err)
+		}
+
+		if strings.TrimSpace(output) != "" {
+			// check if there are commits to push
+			output, err = cmdExec("git", "rev-list", "--count", "origin/main..HEAD")
+			if err != nil {
+				log.Fatal("Failed to check for unpushed commits", "error", err)
+			}
+
+			// Convert the output to an integer
+			commitsToPush, err := strconv.Atoi(strings.TrimSpace(output))
+			if err != nil {
+				log.Fatal("Failed to parse git rev-list output", "output", output, "error", err)
+			}
+
+			if commitsToPush < 1 {
+				return
+			}
+		}
+
+		// push the changes to the remote repository if it exists and if there are commits to push
 		log.Info("Pushing changes to the remote repository...")
-		output, err := cmdExec("git", "push", "-u", "origin", "main")
+		output, err = cmdExec("git", "push", "-u", "origin", "main")
 		if err != nil {
 			log.Fatal("Failed to push changes", "output", output, "error", err)
 		}
@@ -324,6 +398,29 @@ func save() {
 func getDb() (*sql.DB, error) {
 	dbfile := getPath("data.db")
 	return sql.Open("sqlite3", dbfile)
+}
+
+// backup function creates a backup of the database file.
+// it is used to create a backup of the database file before making changes to the database.
+func backup() {
+	dbfile := getPath("data.db")
+	backupfile := getPath(fmt.Sprintf("data_backup_%s.db", time.Now().Format("20060102150405")))
+	input, err := os.Open(dbfile)
+	if err != nil {
+		log.Fatal("Failed to open database file", "error", err)
+	}
+	defer input.Close()
+
+	output, err := os.Create(backupfile)
+	if err != nil {
+		log.Fatal("Failed to create backup file", "error", err)
+	}
+	defer output.Close()
+
+	_, err = io.Copy(output, input)
+	if err != nil {
+		log.Fatal("Failed to copy database file", "error", err)
+	}
 }
 
 // do function executes a query on the database.
@@ -453,18 +550,14 @@ func Init() {
 
 		file.Close()
 		log.Info("Database file created", "file", dbfile)
-
 	}
 
-	log.Info("Initializing database...")
 	err = do("tables")
 	if err != nil {
 		log.Fatal("Failed to create tables", "error", err)
 	}
 
 	initialCommit()
-
-	log.Info("Database initialized successfully!")
 }
 
 // AutoSave function saves the changes made to the database automatically.
@@ -485,6 +578,15 @@ func AutoSave() {
 	if !exists {
 		save()
 	}
+}
+
+// Revert function reverts the database to a previous version.
+func Revert() {
+	confirm := helpers.RunConfirm("Are you sure you want to revert the database?")
+	if !confirm {
+		return
+	}
+	revertDB()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
