@@ -27,12 +27,15 @@ var (
 // linkRepo function adds a link to a remote repository.
 // it is used to link the database to a remote repository for versioning.
 // this action is optional and can be skipped by the user and performed later.
-func linkRepo() {
-	if helpers.RunConfirm("Do you want to add a link to a remote repository?") {
-		logger.Line("Please enter the remote repository name:")
-		remote := helpers.RunInput("YourUsername/repo-name")
-		output, err := cmdExec("git", "remote", "add", "origin", "git@github.com:"+remote)
-		logger.Fatal("Failed to add remote repository", err, "output", output)
+func LinkRepo() {
+	if !remoteExists() {
+		if helpers.RunConfirm("Do you want to add a link to a remote repository?") {
+			logger.Line("Please enter the remote repository name:")
+			remote := helpers.RunInput("YourUsername/repo-name")
+			output, err := cmdExec("git", "remote", "add", "origin", "git@github.com:"+remote)
+			logger.Fatal("Failed to add remote repository", err, "output", output)
+			remoteexixts = true
+		}
 	}
 }
 
