@@ -21,10 +21,10 @@ func Init() {
 		logger.Fatal("Failed to initialize git", err, "output", output)
 
 		// if git is not initialized, link the repository
-		linkRepo()
+		LinkRepo()
 		if remoteExists() {
 			logger.Debug("Fetching remote repository...")
-			if remoteExists() && hasRemoteCommits() && !isAligned {
+			if remoteExists() && hasRemoteCommits() {
 				output, err := cmdExec("git", "fetch")
 				logger.Fatal("Failed to fetch remote repository", err, "output", output)
 			}

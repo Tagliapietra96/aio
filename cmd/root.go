@@ -32,6 +32,13 @@ var rootCmd = &cobra.Command{
 		if revert {
 			db.Revert()
 		}
+
+		addRemote, err := cmd.Flags().GetBool("link-remote")
+		logger.Fatal("Failed to get flag link-remote", err)
+
+		if addRemote {
+			db.LinkRepo()
+		}
 	},
 	// push the changes on repository
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
@@ -48,4 +55,5 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().BoolP("revert", "r", false, "Revert the db version")
+	rootCmd.Flags().BoolP("link-remote", "l", false, "Add a remote repository")
 }
