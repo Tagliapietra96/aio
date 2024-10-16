@@ -1,51 +1,33 @@
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
-
-// File Name: root.go
-// Created by: Matteo Tagliapietra 2024-10-14
-// Last Update: 2024-10-15
-
-// This file contains the root command for the application.
-// This is the main entry point for the cobra commands.
-// It initializes the root command and executes the commands.
-
-// ////////////////////////////////////////////////////////////////////
-// ////////////////////////////////////////////////////////////////////
-
 // cmd package is used to execute commands
 package cmd
 
-// imports the necessary packages
-// db package is used to interact with the database
-// log package is used to log messages to the console
-// cobra package is used to create CLI applications
 import (
 	"aio/db"
+	"aio/logger"
 
-	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "aio",
-	Short: "A all in one application",
-	Long: `
+var rootLongDesc = `
 aio (All In One) is a multi-purpose CLI app that manages tasks, notes, finances, 
 health, and productivity, transforming life into a video game. 
 Track progress, achieve goals, and level up in all aspects of your journey—making productivity fun and rewarding.
 It is a fun way to keep track of your life and improve yourself.
 
-For more information, visit the project page at https://github.com/Tagliapietra96/aio`,
+For more information, visit the project page at https://github.com/Tagliapietra96/aio`
+
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:   "aio",
+	Short: "A all in one application",
+	Long:  rootLongDesc,
 	// init the database and user if they do not exist
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		db.Init()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		revert, err := cmd.Flags().GetBool("revert")
-		if err != nil {
-			log.Fatal("Failed to get flag revert", "error", err)
-		}
+		logger.Fatal("Failed to get flag revert", err)
 
 		if revert {
 			db.Revert()
@@ -61,9 +43,7 @@ For more information, visit the project page at https://github.com/Tagliapietra9
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
-	if err != nil {
-		log.Fatal("Failed to execute command", "error", err)
-	}
+	logger.Fatal("Failed to execute command", err)
 }
 
 func init() {

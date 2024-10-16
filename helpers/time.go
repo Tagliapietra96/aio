@@ -1,28 +1,6 @@
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-// File Name: time.go
-// Created by: Matteo Tagliapietra 2024-09-01
-// Last Update: 2024-10-15
-
-// This file contains helper functions to parse and format time strings.
-// It is used to parse time strings and return time.Time objects.
-// It is used to format time.Time objects and return time strings.
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
 // helpers package contains helper functions to interact with the database and the filesystem.
 package helpers
 
-// imports the necessary packages
-// errors package is used to create custom errors
-// os package is used to read and write files
-// slices package is used to manipulate slices
-// strconv package is used to convert strings to integers
-// strings package is used to manipulate strings
-// time package is used to manipulate time objects
-// log package is used to log messages to the console
 import (
 	"errors"
 	"os"
@@ -34,15 +12,12 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
 //
 // variables
 //
 
 // timeformat is the default time format used to format time.Time objects.
-const timeformat = "Mon 02 Jan 06 15:04 MST"
+const timeformat = "Mon 02 Jan 2006 15:04 MST"
 
 // dbtimeformat is the default time format used to format time.Time objects for a database.
 const dbtimeformat = "2006-01-02 15:04:05"
@@ -141,9 +116,9 @@ func timeLaunchParseError(ts string, err error) {
 		- date + " on HH:MM"
 
 		Or you can provide a specific date with the following format:
-		- "Mon 02 Jan 24 15:04"
-		- "02 Jan 24 15:04"
-		- "02 Jan 24"
+		- "Mon 02 Jan 2024 15:04"
+		- "02 Jan 2024 15:04"
+		- "02 Jan 2024"
 
 		Please note that the time string is case insensitive
 		If you don't provide a time, it will default to 00:00
@@ -156,8 +131,8 @@ func timeLaunchParseError(ts string, err error) {
 		- "in 2 mon 15:00"
 		- "3 Thursdays ago at 12:00"
 		- "Yesterday at 12:00"
-		- "02 Jan 24 15:04"
-		- "02 Jan 24"
+		- "02 Jan 2024 15:04"
+		- "02 Jan 2024"
 	`)
 	os.Exit(1)
 }

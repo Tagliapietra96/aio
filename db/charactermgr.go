@@ -1,16 +1,3 @@
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-// File Name: charactermgr.go
-// Created by: Matteo Tagliapietra 2024-10-15
-// Last Update: 2024-10-15
-
-// This file contains the functions to manage the characters in the application.
-// It contains also all the information about the characters.
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 // db package is used to interact with the database
 package db
 
@@ -18,17 +5,9 @@ package db
 // time package is used to manipulate time
 import (
 	"aio/helpers"
+	"aio/logger"
 	"time"
-
-	"github.com/charmbracelet/log"
 )
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-//
-// CharacterMgr struct
-//
 
 // CharacterMgr struct contains all the information about the character.
 // It is used to manage the character in the application.
@@ -52,47 +31,36 @@ type CharacterMgr struct {
 	UpdatedAt   time.Time
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-//
-// CharacterMgr functions
-//
-
 // NewCharacterMgr function creates a new CharacterMgr object.
 // It returns a pointer to the new CharacterMgr object.
 func NewCharacterMgr() *CharacterMgr {
+	var birth, created, updated string
 	c := &CharacterMgr{}
 	row, err := get("characters_get")
-	if err != nil {
-		log.Fatal("Error getting character from the database")
-	}
-	var birth, created, updated string
 
-	err = row.Scan(
-		&c.FirstName,
-		&c.LastName,
-		&c.NickName,
-		&birth,
-		&c.MonthBudget,
-		&c.Balance,
-		&c.Coins,
-		&c.XP,
-		&c.NextLevelXP,
-		&c.Level,
-		&c.PP,
-		&c.MaxPP,
-		&c.HP,
-		&c.MaxHP,
-		&c.Karma,
-		created,
-		updated,
-	)
-
-	if err != nil {
-		log.Fatal("Error scanning character from the database")
+	if err == nil {
+		err = row.Scan(
+			&c.FirstName,
+			&c.LastName,
+			&c.NickName,
+			&birth,
+			&c.MonthBudget,
+			&c.Balance,
+			&c.Coins,
+			&c.XP,
+			&c.NextLevelXP,
+			&c.Level,
+			&c.PP,
+			&c.MaxPP,
+			&c.HP,
+			&c.MaxHP,
+			&c.Karma,
+			created,
+			updated,
+		)
 	}
 
+	logger.Fatal("Error scanning character from the database", err)
 	c.BirthDate = helpers.TimeDBParse(birth)
 	c.CreatedAt = helpers.TimeDBParse(created)
 	c.UpdatedAt = helpers.TimeDBParse(updated)
@@ -116,8 +84,5 @@ func (c *CharacterMgr) Death() {
 	err := gitFlow(func() error {
 		return do("characters_death")
 	})
-
-	if err != nil {
-		log.Fatal("Error killing character")
-	}
+	logger.Fatal("Error killing character", err)
 }

@@ -1,6 +1,4 @@
 -- File: characters_death.sql
--- Created by: Matteo Tagliapietra 2024-10-15
--- Last modified: 2024-10-15
 -- Purpose: Update the character's stats when on death.
 UPDATE characters
 SET hp = 100,

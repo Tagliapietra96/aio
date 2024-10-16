@@ -3,9 +3,6 @@
 --------------------------------------------------------------------------------------
 
 -- File Name: tables.sql
--- Created by: Matteo Tagliapietra 2024-09-01
--- Last modified: 2024-10-15
-
 -- Tables creation script
 -- In this file we define the tables and triggers for the database
 -- We use SQLite3 as the database engine
