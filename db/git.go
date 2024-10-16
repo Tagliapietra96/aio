@@ -3,14 +3,11 @@ package db
 
 import (
 	"aio/helpers"
-	"fmt"
+	"aio/logger"
 	"os/exec"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-
-	"github.com/charmbracelet/log"
 )
 
 var (
@@ -25,7 +22,6 @@ var (
 	hasmainCheck      bool
 	hasmain           bool
 	isAligned         bool
-	wu                sync.WaitGroup
 )
 
 // linkRepo function adds a link to a remote repository.
@@ -33,12 +29,10 @@ var (
 // this action is optional and can be skipped by the user and performed later.
 func linkRepo() {
 	if helpers.RunConfirm("Do you want to add a link to a remote repository?") {
-		fmt.Println("Please enter the remote repository name:")
+		logger.Line("Please enter the remote repository name:")
 		remote := helpers.RunInput("YourUsername/repo-name")
 		output, err := cmdExec("git", "remote", "add", "origin", "git@github.com:"+remote)
-		if err != nil {
-			log.Fatal("Failed to add remote repository", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to add remote repository", err, "output", output)
 	}
 }
 
@@ -47,9 +41,7 @@ func linkRepo() {
 func remoteExists() bool {
 	if !remoteexixtsCheck {
 		output, err := cmdExec("git", "remote")
-		if err != nil {
-			log.Fatal("Failed to get remote repository", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to get remote repository", err, "output", output)
 		remoteexixts = strings.TrimSpace(output) != ""
 		remoteexixtsCheck = true
 	}
@@ -75,9 +67,7 @@ func gitPull() {
 	if remoteExists() && hasRemoteCommits() && !isAligned {
 		gitMain()
 		output, err := cmdExec("git", "pull", "origin", "main")
-		if err != nil {
-			log.Fatal("Failed to pull remote repository", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to pull remote repository", err, "output", output)
 		isAligned = true
 	}
 }
@@ -93,15 +83,11 @@ func gitMain() {
 
 	if !hasmain {
 		output, err := cmdExec("git", "checkout", "-b", "main")
-		if err != nil {
-			log.Fatal("Failed to create main branch", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to create main branch", err, "output", output)
 		hasmain = true
 	} else {
 		output, err := cmdExec("git", "checkout", "main")
-		if err != nil {
-			log.Fatal("Failed to checkout main branch", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to checkout main branch", err, "output", output)
 	}
 }
 
@@ -109,20 +95,17 @@ func gitMain() {
 // it is used to commit the database file to the local repository.
 // it also renames the branch to main and pushes the changes to the remote repository if it exists.
 func initialCommit() {
+	dbfile := getPath("data.db")
+
 	if !haschangesCheck {
-		dbfile := getPath("data.db")
 		output, err := cmdExec("git", "status", "--porcelain", dbfile)
-		if err != nil {
-			log.Fatal("Failed to check changes", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to check changes", err, "output", output)
 
 		haschanges = strings.TrimSpace(output) != ""
 		haschangesCheck = true
 	}
 
 	if haschanges {
-
-		dbfile := getPath("data.db")
 		var output string
 		var err error
 
@@ -134,20 +117,13 @@ func initialCommit() {
 
 		if !hasRemoteCommits() && !haslocal {
 			output, err = cmdExec("git", "add", dbfile)
-			if err != nil {
-				log.Fatal("Failed to add database file", "output", output, "error", err)
-			}
+			logger.Fatal("Failed to add database file", err, "output", output)
 
 			// do the initial commit
 			output, err = cmdExec("git", "commit", "-m", "initial commit")
-			if err != nil {
-				log.Fatal("Failed to commit changes", "output", output, "error", err)
-			}
-
+			logger.Fatal("Failed to commit changes", err, "output", output)
 			output, err = cmdExec("git", "branch", "-M", "main")
-			if err != nil {
-				log.Fatal("Failed to rename branch", "output", output, "error", err)
-			}
+			logger.Fatal("Failed to rename branch", err, "output", output)
 
 			haslocal = true
 		}
@@ -158,47 +134,33 @@ func initialCommit() {
 // it is used to execute a series of git commands in a transaction to ensure the integrity of the data.
 // if an error occurs, it rolls back the changes.
 func gitFlow(action func() error) error {
-	wu.Add(1)
 	// pull the remote repository (if it exists) before making changes
 	gitPull()
 
 	// create a new branch
 	branch := time.Now().Format("20060102150405")
 	output, err := cmdExec("git", "checkout", "-b", branch)
-	if err != nil {
-		log.Fatal("Failed to create branch", "output", output, "error", err)
-	}
+	logger.Fatal("Failed to create branch", err, "output", output)
 
 	// execute the actions on the database, if an error occurs, delete the branch and return the error
 	err = action()
 	if err != nil {
 		gitMain()
 		output, err = cmdExec("git", "branch", "-D", branch)
-		if err != nil {
-			log.Fatal("Failed to delete branch", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to delete branch", err, "output", output)
 		return err
 	}
 
 	// commit the changes to the database
-	go func() {
-		defer wu.Done()
-		output, err := cmdExec("git", "add", getPath("data.db"))
-		if err != nil {
-			log.Fatal("Failed to add database file", "output", output, "error", err)
-		}
+	output, err = cmdExec("git", "add", getPath("data.db"))
+	logger.Fatal("Failed to add database file", err, "output", output)
 
-		output, err = cmdExec("git", "commit", "-m", "changes-"+branch)
-		if err != nil {
-			log.Fatal("Failed to commit changes", "output", output, "error", err)
-		}
+	output, err = cmdExec("git", "commit", "-m", "changes-"+branch)
+	logger.Fatal("Failed to commit changes", err, "output", output)
 
-		gitMain()
-		output, err = cmdExec("git", "merge", branch, "--no-ff")
-		if err != nil {
-			log.Fatal("Failed to merge branches", "output", output, "error", err)
-		}
-	}()
+	gitMain()
+	output, err = cmdExec("git", "merge", branch, "--no-ff")
+	logger.Fatal("Failed to merge branches", err, "output", output)
 	return nil
 }
 
@@ -209,13 +171,11 @@ func gitFlow(action func() error) error {
 func revertDB() {
 	// get the commit hash
 	output, err := cmdExec("git", "log", "--pretty=format:%h %ad %s", "--date=short", "data.db")
-	if err != nil {
-		log.Fatal("Failed to get log", "output", output, "error", err)
-	}
+	logger.Fatal("Failed to get log", err, "output", output)
 	history := strings.Split(output, "\n")
-	fmt.Println("Select the version to revert to:\n")
+	logger.Line("Select the version to revert to:\n")
 	choice := helpers.RunSelect(history)
-	fmt.Println("")
+	logger.Line("")
 	commitHash := strings.Split(choice, " ")[0]
 	version := strings.Split(choice, " ")[2]
 
@@ -224,22 +184,16 @@ func revertDB() {
 
 	// revert the database
 	output, err = cmdExec("git", "checkout", commitHash, "--", "data.db")
-	if err != nil {
-		log.Fatal("Failed to revert database", "output", output, "error", err)
-	}
+	logger.Fatal("Failed to revert database", err, "output", output)
 
 	// commit the changes
 	output, err = cmdExec("git", "add", "data.db")
-	if err != nil {
-		log.Fatal("Failed to add database file", "output", output, "error", err)
-	}
+	logger.Fatal("Failed to add database file", err, "output", output)
 
 	output, err = cmdExec("git", "commit", "-m", "revert-database-to-"+version)
-	if err != nil {
-		log.Fatal("Failed to commit changes", "output", output, "error", err)
-	}
+	logger.Fatal("Failed to commit changes", err, "output", output)
 
-	log.Info("Database reverted to version " + version)
+	logger.Info("Database reverted to version " + version)
 }
 
 // save function saves the changes made to the database.
@@ -251,29 +205,20 @@ func save() {
 		err := gitFlow(func() error {
 			return do("push_schedules_create")
 		})
-		if err != nil {
-			log.Fatal("Failed to save new push schedule log", "error", err)
-		}
+		logger.Fatal("Failed to save new push schedule log", err)
 
-		wu.Wait()
 		// check if the remote branch exists
 		output, err := cmdExec("git", "ls-remote", "--heads", "origin", "main")
-		if err != nil {
-			log.Fatal("Failed to check remote branch existence", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to check remote branch existence", err, "output", output)
 
 		if strings.TrimSpace(output) != "" {
 			// check if there are commits to push
 			output, err = cmdExec("git", "rev-list", "--count", "origin/main..HEAD")
-			if err != nil {
-				log.Fatal("Failed to check for unpushed commits", "error", err)
-			}
+			logger.Fatal("Failed to check for unpushed commits", err)
 
 			// Convert the output to an integer
 			commitsToPush, err := strconv.Atoi(strings.TrimSpace(output))
-			if err != nil {
-				log.Fatal("Failed to parse git rev-list output", "output", output, "error", err)
-			}
+			logger.Fatal("Failed to parse git rev-list output", err, "output", output)
 
 			if commitsToPush < 1 {
 				return
@@ -281,11 +226,10 @@ func save() {
 		}
 
 		// push the changes to the remote repository if it exists and if there are commits to push
-		log.Info("Pushing changes to the remote repository...")
+		logger.Debug("Pushing changes to the remote repository...")
 		output, err = cmdExec("git", "push", "-u", "origin", "main")
-		if err != nil {
-			log.Fatal("Failed to push changes", "output", output, "error", err)
-		}
+		logger.Fatal("Failed to push changes", err, "output", output)
 		hasremote = true
+		logger.Info("Changes pushed to the remote repository")
 	}
 }

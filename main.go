@@ -18,10 +18,13 @@ package main
 
 import (
 	"aio/cmd"
+	"aio/logger"
 )
 
 // main function is the entry point for the application.
 func main() {
-	// execute commands
-	cmd.Execute()
+	defer logger.Close()                                  // close the logger when the main function exits
+	cmd.Execute()                                         // execute the commands
+	logger.Debug("All processes completed successfully!") // notify the user that all processes have completed
+	logger.Debug("-----------------------------")         // print a separator
 }

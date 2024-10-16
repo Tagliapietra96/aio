@@ -17,7 +17,7 @@ import (
 //
 
 // timeformat is the default time format used to format time.Time objects.
-const timeformat = "Mon 02 Jan 06 15:04 MST"
+const timeformat = "Mon 02 Jan 2006 15:04 MST"
 
 // dbtimeformat is the default time format used to format time.Time objects for a database.
 const dbtimeformat = "2006-01-02 15:04:05"
@@ -116,9 +116,9 @@ func timeLaunchParseError(ts string, err error) {
 		- date + " on HH:MM"
 
 		Or you can provide a specific date with the following format:
-		- "Mon 02 Jan 24 15:04"
-		- "02 Jan 24 15:04"
-		- "02 Jan 24"
+		- "Mon 02 Jan 2024 15:04"
+		- "02 Jan 2024 15:04"
+		- "02 Jan 2024"
 
 		Please note that the time string is case insensitive
 		If you don't provide a time, it will default to 00:00
@@ -131,8 +131,8 @@ func timeLaunchParseError(ts string, err error) {
 		- "in 2 mon 15:00"
 		- "3 Thursdays ago at 12:00"
 		- "Yesterday at 12:00"
-		- "02 Jan 24 15:04"
-		- "02 Jan 24"
+		- "02 Jan 2024 15:04"
+		- "02 Jan 2024"
 	`)
 	os.Exit(1)
 }

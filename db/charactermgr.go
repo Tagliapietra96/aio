@@ -5,9 +5,8 @@ package db
 // time package is used to manipulate time
 import (
 	"aio/helpers"
+	"aio/logger"
 	"time"
-
-	"github.com/charmbracelet/log"
 )
 
 // CharacterMgr struct contains all the information about the character.
@@ -35,37 +34,33 @@ type CharacterMgr struct {
 // NewCharacterMgr function creates a new CharacterMgr object.
 // It returns a pointer to the new CharacterMgr object.
 func NewCharacterMgr() *CharacterMgr {
+	var birth, created, updated string
 	c := &CharacterMgr{}
 	row, err := get("characters_get")
-	if err != nil {
-		log.Fatal("Error getting character from the database")
-	}
-	var birth, created, updated string
 
-	err = row.Scan(
-		&c.FirstName,
-		&c.LastName,
-		&c.NickName,
-		&birth,
-		&c.MonthBudget,
-		&c.Balance,
-		&c.Coins,
-		&c.XP,
-		&c.NextLevelXP,
-		&c.Level,
-		&c.PP,
-		&c.MaxPP,
-		&c.HP,
-		&c.MaxHP,
-		&c.Karma,
-		created,
-		updated,
-	)
-
-	if err != nil {
-		log.Fatal("Error scanning character from the database")
+	if err == nil {
+		err = row.Scan(
+			&c.FirstName,
+			&c.LastName,
+			&c.NickName,
+			&birth,
+			&c.MonthBudget,
+			&c.Balance,
+			&c.Coins,
+			&c.XP,
+			&c.NextLevelXP,
+			&c.Level,
+			&c.PP,
+			&c.MaxPP,
+			&c.HP,
+			&c.MaxHP,
+			&c.Karma,
+			created,
+			updated,
+		)
 	}
 
+	logger.Fatal("Error scanning character from the database", err)
 	c.BirthDate = helpers.TimeDBParse(birth)
 	c.CreatedAt = helpers.TimeDBParse(created)
 	c.UpdatedAt = helpers.TimeDBParse(updated)
@@ -89,8 +84,5 @@ func (c *CharacterMgr) Death() {
 	err := gitFlow(func() error {
 		return do("characters_death")
 	})
-
-	if err != nil {
-		log.Fatal("Error killing character")
-	}
+	logger.Fatal("Error killing character", err)
 }

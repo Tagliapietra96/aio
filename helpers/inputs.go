@@ -2,6 +2,7 @@
 package helpers
 
 import (
+	"aio/logger"
 	"fmt"
 	"math"
 	"os"
@@ -52,6 +53,7 @@ func (i *input) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter:
 			err := i.validation(i.in.Value())
 			if err != nil {
+				i.in.SetValue("")
 				i.err = err
 				i.in.PlaceholderStyle = i.errStyle
 				i.in.Placeholder = i.err.Error()
@@ -86,13 +88,14 @@ func RunInputWithValidation(ph string, validation func(string) error) string {
 	ti.Focus()
 	ti.CharLimit = 156
 	norms := ti.PlaceholderStyle
-	errs := norms.Foreground(lipgloss.Color("205"))
+	errs := norms.Foreground(lipgloss.Color("196"))
 	m := input{in: ti, normStyle: norms, errStyle: errs, validation: validation, ph: ph, done: false, err: nil}
 	p := tea.NewProgram(&m)
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err.Error())
 	}
 	if !m.done {
+		logger.Close()
 		os.Exit(0)
 	}
 	return m.in.Value()
@@ -184,6 +187,7 @@ func RunConfirm(question string) bool {
 		log.Fatal(err.Error())
 	}
 	if !m.done {
+		logger.Close()
 		os.Exit(0)
 	}
 	return m.response
@@ -308,6 +312,7 @@ func RunSelect(options []string) string {
 		log.Fatal(err.Error())
 	}
 	if !m.done {
+		logger.Close()
 		os.Exit(0)
 	}
 	return m.options[m.index]
