@@ -4,30 +4,7 @@ package db
 import (
 	"aio/pkg/log"
 	"aio/pkg/utils/tm"
-	"time"
 )
-
-// CharacterMgr struct contains all the information about the character.
-// It is used to manage the character in the application.
-type CharacterMgr struct {
-	FirstName   string
-	LastName    string
-	NickName    string
-	MonthBudget float64
-	Balance     float64
-	Coins       int
-	XP          int
-	NextLevelXP int
-	Level       int
-	PP          int
-	MaxPP       int
-	HP          int
-	MaxHP       int
-	Karma       int
-	BirthDate   time.Time
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-}
 
 // NewCharacterMgr function creates a new CharacterMgr object.
 // It returns a pointer to the new CharacterMgr object.
