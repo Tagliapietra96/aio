@@ -334,6 +334,17 @@ func Push() error {
 
 			log.Info("no changes to push")
 			return nil
+		} else {
+			if hasLocalCommits() {
+				log.Warn("no remote repository branch found, pushing to main branch")
+				output, err := cmd.Output("git", "push", "-u", "origin", "main")
+				if err != nil {
+					log.Err("failed to push changes", "output", string(output))
+					return err
+				}
+				log.Info("changes pushed successfully!")
+				return nil
+			}
 		}
 	}
 
