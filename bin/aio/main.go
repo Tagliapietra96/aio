@@ -24,6 +24,6 @@ import (
 // main function is the entry point for the application.
 func main() {
 	cmd.Execute()                                    // execute the commands
-	log.Deb("All processes completed successfully!") // notify the user that all processes have completed
+	log.Deb("all processes completed successfully!") // notify the user that all processes have completed
 	log.Deb("-----------------------------")         // print a separator
 }

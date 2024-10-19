@@ -282,9 +282,10 @@ func Commit() error {
 
 		log.Info("database committed successfully!")
 		return nil
+	} else {
+		log.Info("no changes to commit")
 	}
 
-	log.Info("no changes to commit")
 	return nil
 }
 

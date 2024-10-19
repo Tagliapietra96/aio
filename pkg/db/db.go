@@ -5,14 +5,12 @@ import (
 	"aio/pkg/git"
 	"aio/pkg/inputs"
 	"aio/pkg/log"
-	"aio/pkg/utils/cmd"
 	"aio/pkg/utils/fs"
 	"aio/pkg/utils/num"
 	"aio/pkg/utils/tm"
 	"database/sql"
 	"embed"
 	"os"
-	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -185,6 +183,9 @@ func Init() error {
 
 		file.Close()
 		log.Info("database file created", "file", dbfile)
+
+		// do the initial commit
+		git.InitialCommit()
 	}
 
 	// create the tables, indexes, and triggers
@@ -195,9 +196,6 @@ func Init() error {
 	}
 
 	log.Info("database initialized successfully!")
-
-	// do the initial commit
-	git.InitialCommit()
 
 	// check if there are characters in the database
 	var exists bool
@@ -294,35 +292,6 @@ Ready to make self-improvement fun? Your journey starts now!
 			return err
 		}
 		log.Info("daily login created successfully!")
-	}
-
-	// launch the cron service
-	bin, err := fs.Path("cron")
-	if err != nil {
-		log.Err("failed to get cron binary path")
-		return err
-	}
-
-	running := false
-	out, err := cmd.Output("pgrep", "-f", bin)
-	if err == nil {
-		running = strings.TrimSpace(string(out)) != ""
-	}
-
-	if !running {
-		err = os.Chmod(bin, 0755)
-		if err != nil {
-			log.Err("failed to change cron binary permissions")
-			return err
-		}
-
-		err := cmd.Start("caffeinate", "-s", bin)
-		if err != nil {
-			log.Err("failed to start cron service")
-			return err
-		}
-
-		log.Info("started cron service.")
 	}
 
 	log.Info("database initialized successfully!")

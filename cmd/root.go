@@ -5,6 +5,10 @@ import (
 	"aio/pkg/db"
 	"aio/pkg/git"
 	"aio/pkg/log"
+	cmdutils "aio/pkg/utils/cmd"
+	"aio/pkg/utils/fs"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -58,6 +62,36 @@ var rootCmd = &cobra.Command{
 				log.Fat(err)
 
 			}
+		}
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		// launch the cron service
+		bin, err := fs.Path("cron")
+		if err != nil {
+			log.Err("failed to get cron binary path")
+			log.Fat(err)
+		}
+
+		running := false
+		out, err := cmdutils.Output("pgrep", "-f", bin)
+		if err == nil {
+			running = strings.TrimSpace(string(out)) != ""
+		}
+
+		if !running {
+			err = os.Chmod(bin, 0755)
+			if err != nil {
+				log.Err("failed to change cron binary permissions")
+				log.Fat(err)
+			}
+
+			err := cmdutils.Start("caffeinate", "-s", bin)
+			if err != nil {
+				log.Err("failed to start cron service")
+				log.Fat(err)
+			}
+
+			log.Info("started cron service")
 		}
 	},
 }

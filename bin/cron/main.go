@@ -18,7 +18,6 @@ import (
 	"aio/pkg/log"
 	"aio/pkg/utils/fs"
 	"sync"
-	"time"
 
 	"os"
 
@@ -40,11 +39,12 @@ func checkForMainBinary(c *cron.Cron, bin string) {
 // monitorMainBinary function monitors the main binary.
 // if the main binary is deleted, it stops the cron job and exits the program.
 func monitorMainBinary(c *cron.Cron, bin string) {
-	ticker := time.NewTicker(10 * time.Second) // Check every 10 seconds
-	defer ticker.Stop()
-
-	for range ticker.C {
+	_, err := c.AddFunc("@every 10s", func() {
 		checkForMainBinary(c, bin)
+	})
+	if err != nil {
+		log.Err("failed to add monitorMainBinary cron job")
+		log.Fat(err)
 	}
 }
 
@@ -58,15 +58,12 @@ func main() {
 	}
 
 	c := cron.New()
-	var check = func() {
-		checkForMainBinary(c, bin) // stop the cron job if the main binary is deleted
-	}
 
 	// jobs list
-	pushSchedule(c, check) // push db to the remote repository every 5 minutes
-	cleanLogs(c, check)    // clean the logs directory every 24 hours
+	pushSchedule(c, bin) // push db to the remote repository every 5 minutes
+	cleanLogs(c, bin)    // clean the logs directory every 24 hours
 
-	c.Start()                    // start the cron service
-	go monitorMainBinary(c, bin) // add a goroutine to monitor the main binary
-	select {}                    // keep the cron service running
+	monitorMainBinary(c, bin) // monitor the main binary every 10 seconds
+	c.Start()                 // start the cron service
+	select {}                 // keep the cron service running
 }

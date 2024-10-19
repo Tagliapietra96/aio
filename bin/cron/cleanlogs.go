@@ -11,9 +11,9 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-func cleanLogs(c *cron.Cron, check func()) {
-	c.AddFunc("@every 24h", func() {
-		check()                                        // stop the cron job if the main binary is deleted
+func cleanLogs(c *cron.Cron, bin string) {
+	_, err := c.AddFunc("@every 24h", func() {
+		checkForMainBinary(c, bin)                     // stop the cron job if the main binary is deleted
 		log.Deb("--- clean logs cron job started ---") // print a separator
 
 		today := time.Now().Format("2006-01-02") // Today's date
@@ -50,4 +50,9 @@ func cleanLogs(c *cron.Cron, check func()) {
 
 		log.Deb("--- clean logs cron job ended ---") // print a separator
 	})
+
+	if err != nil {
+		log.Err("failed to add cleanLogs cron job")
+		log.Fat(err)
+	}
 }

@@ -47,6 +47,7 @@ func loggerInit() (*log.Logger, *os.File, error) {
 	logger.SetTimeFormat("[Monday, 02 Jan 2006 15:04:05]")
 	logger.SetLevel(log.DebugLevel)
 	logger.SetReportCaller(true)
+	logger.SetCallerOffset(1)
 
 	return logger, logFile, nil
 }
