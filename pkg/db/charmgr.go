@@ -1,11 +1,9 @@
 // db package is used to interact with the database
 package db
 
-// imports the necessary packages
-// time package is used to manipulate time
 import (
-	"aio/helpers"
-	"aio/logger"
+	"aio/pkg/log"
+	"aio/pkg/utils/tm"
 	"time"
 )
 
@@ -33,44 +31,64 @@ type CharacterMgr struct {
 
 // NewCharacterMgr function creates a new CharacterMgr object.
 // It returns a pointer to the new CharacterMgr object.
-func NewCharacterMgr() *CharacterMgr {
+func CharGet() (*Character, error) {
 	var birth, created, updated string
-	c := &CharacterMgr{}
+	c := &Character{}
 	row, err := get("characters_get")
-
-	if err == nil {
-		err = row.Scan(
-			&c.FirstName,
-			&c.LastName,
-			&c.NickName,
-			&birth,
-			&c.MonthBudget,
-			&c.Balance,
-			&c.Coins,
-			&c.XP,
-			&c.NextLevelXP,
-			&c.Level,
-			&c.PP,
-			&c.MaxPP,
-			&c.HP,
-			&c.MaxHP,
-			&c.Karma,
-			created,
-			updated,
-		)
+	if err != nil {
+		log.Err("failed to get the character")
+		return nil, err
 	}
 
-	logger.Fatal("Error scanning character from the database", err)
-	c.BirthDate = helpers.TimeDBParse(birth)
-	c.CreatedAt = helpers.TimeDBParse(created)
-	c.UpdatedAt = helpers.TimeDBParse(updated)
+	err = row.Scan(
+		&c.FirstName,
+		&c.LastName,
+		&c.NickName,
+		&birth,
+		&c.MonthBudget,
+		&c.Balance,
+		&c.Coins,
+		&c.XP,
+		&c.NextLevelXP,
+		&c.Level,
+		&c.PP,
+		&c.MaxPP,
+		&c.HP,
+		&c.MaxHP,
+		&c.Karma,
+		created,
+		updated,
+	)
 
-	return c
+	if err != nil {
+		log.Err("failed to scan the character")
+		return nil, err
+	}
+
+	c.BirthDate, err = tm.DBParse(birth)
+	if err != nil {
+		log.Err("failed to parse the birth date")
+		return nil, err
+	}
+
+	c.CreatedAt, err = tm.DBParse(created)
+	if err != nil {
+		log.Err("failed to parse the created date")
+		return nil, err
+	}
+
+	c.UpdatedAt, err = tm.DBParse(updated)
+	if err != nil {
+		log.Err("failed to parse the updated date")
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // Death function kills the character.
 // It sets all the character's stats to intial value and decreases the karma by 10.
-func (c *CharacterMgr) Death() {
+func (c *Character) Death() error {
 	c.XP = 0
 	c.NextLevelXP = 50
 	c.Level = 1
@@ -81,8 +99,11 @@ func (c *CharacterMgr) Death() {
 	c.Karma = c.Karma - 10
 	c.Coins = 0
 
-	err := gitFlow(func() error {
-		return do("characters_death")
-	})
-	logger.Fatal("Error killing character", err)
+	err := do("characters_death")
+	if err != nil {
+		log.Err("failed to kill the character")
+		return err
+	}
+
+	return nil
 }

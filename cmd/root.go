@@ -2,8 +2,9 @@
 package cmd
 
 import (
-	"aio/db"
-	"aio/logger"
+	"aio/pkg/db"
+	"aio/pkg/git"
+	"aio/pkg/log"
 
 	"github.com/spf13/cobra"
 )
@@ -23,26 +24,41 @@ var rootCmd = &cobra.Command{
 	Long:  rootLongDesc,
 	// init the database and user if they do not exist
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		db.Init()
+		err := db.Init()
+		if err != nil {
+			log.Err("failed to initialize the database")
+			log.Fat(err)
+		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		revert, err := cmd.Flags().GetBool("revert")
-		logger.Fatal("Failed to get flag revert", err)
+		if err != nil {
+			log.Err("failed to get flag revert")
+			log.Fat(err)
+		}
 
 		if revert {
-			db.Revert()
+			err := git.Revert()
+			if err != nil {
+				log.Err("failed to revert the db version")
+				log.Fat(err)
+			}
 		}
 
 		addRemote, err := cmd.Flags().GetBool("link-remote")
-		logger.Fatal("Failed to get flag link-remote", err)
+		if err != nil {
+			log.Err("failed to get flag link-remote")
+			log.Fat(err)
+		}
 
 		if addRemote {
-			db.LinkRepo()
+			err := git.LinkRepo()
+			if err != nil {
+				log.Err("failed to link the remote repository")
+				log.Fat(err)
+
+			}
 		}
-	},
-	// push the changes on repository
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		db.AutoSave()
 	},
 }
 
@@ -50,7 +66,10 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
-	logger.Fatal("Failed to execute command", err)
+	if err != nil {
+		log.Err("failed to execute the root command")
+		log.Fat(err)
+	}
 }
 
 func init() {

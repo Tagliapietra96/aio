@@ -1,5 +1,5 @@
-// logger package styles
-package logger
+// log package styles
+package log
 
 import "github.com/charmbracelet/lipgloss"
 
