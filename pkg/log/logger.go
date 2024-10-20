@@ -120,9 +120,34 @@ func Fat(err error) {
 	}
 
 	logger.Error("FATAL", "error", err) // log the message
-	prefix := ErrorStyle.Render("ERROR: ")
-	println(prefix + "check logs for more details")                                                                // print an advice to check the logs
+	PrintErr("an error occurred, check the log files", "log-dir", logDir)
 	beeep.Alert("aio: an error occurred", "To see the full error, check the log file in this folder: "+logDir, "") // display an alert to check the logs
 	file.Close()                                                                                                   // close the file
 	os.Exit(1)                                                                                                     // exit the program
+}
+
+// PrintDeb function logs a debug message to the console
+func PrintDeb(mas string, args ...any) {
+	log.Debug(mas, args...)
+}
+
+// PrintInfo function logs an info message to the console
+func PrintInfo(mas string, args ...any) {
+	log.Info(mas, args...)
+}
+
+// PrintWarn function logs a warning message to the console
+func PrintWarn(mas string, args ...any) {
+	log.Warn(mas, args...)
+}
+
+// PrintErr function logs an error message to the console
+func PrintErr(mas string, args ...any) {
+	log.Error(mas, args...)
+}
+
+// PrintFat function logs a fatal error message to the console and exits the program
+func PrintFat(err error) {
+	log.Error("FATAL", "error", err)
+	os.Exit(1)
 }
