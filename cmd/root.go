@@ -107,6 +107,6 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolP("revert", "r", false, "Revert the db version")
-	rootCmd.Flags().BoolP("link-remote", "l", false, "Add a remote repository")
+	rootCmd.Flags().BoolP("revert", "r", false, "revert the db version")
+	rootCmd.Flags().BoolP("link-remote", "l", false, "add a remote repository")
 }
