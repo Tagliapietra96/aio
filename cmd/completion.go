@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"aio/pkg/log"
-	"errors"
 
 	"github.com/spf13/cobra"
 )
@@ -61,8 +60,8 @@ var completionCmd = &cobra.Command{
 				log.Fat(err)
 			}
 		default:
-			log.Err("unsupported shell type")
-			log.Fat(errors.New("unsupported shell type, use bash, zsh, fish, or powershell as the argument"))
+			log.PrintErr("unsupported shell type")
+			return
 		}
 	},
 }

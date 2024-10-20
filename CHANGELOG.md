@@ -1,4 +1,7 @@
 # Changelog
+## [v0.1.5] - 2024-10-20
+### Additions
+- add functions to log package to print logs directly in the console
 ## [v0.1.4] - 2024-10-20
 ### Additions
 - add completion command to generate completion scripts for bash, zsh, fish and power shell
