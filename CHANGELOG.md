@@ -1,4 +1,10 @@
 # Changelog
+## [v0.1.4] - 2024-10-20
+### Addiotions
+- add completion command to generate completion scripts for bash, zsh, fish and power shell
+
+### Changes
+- changed copy for root command flags
 ## [v0.1.3] - 2024-10-19
 ### Additions
 - add a second main package to generate a standalone cron job binary
