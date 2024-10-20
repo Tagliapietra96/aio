@@ -85,7 +85,7 @@ var rootCmd = &cobra.Command{
 				log.Fat(err)
 			}
 
-			err := cmdutils.Start("caffeinate", "-s", bin)
+			err := cmdutils.StartBinaryWithInhibitSystemSleep(bin)
 			if err != nil {
 				log.Err("failed to start cron service")
 				log.Fat(err)

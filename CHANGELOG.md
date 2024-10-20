@@ -1,4 +1,7 @@
 # Changelog
+## [v0.1.6] - 2024-10-20
+### Changes
+- changed the command to launch cron binary, now support macOS, linux and windows
 ## [v0.1.5] - 2024-10-20
 ### Additions
 - add functions to log package to print logs directly in the console
